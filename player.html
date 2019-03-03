@@ -1,0 +1,23 @@
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<video id="video" controls autoplay height="90%"></video>
+<script>
+  var video = document.getElementById('video');
+  var config = {
+	debug: true,
+	liveSyncDurationCount: Number.MAX_SAFE_INTEGER,
+  };
+  if(Hls.isSupported()) {
+    var hls = new Hls(config);
+    hls.loadSource('{{.VideoSource}}');
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+	  video.play();
+	});
+  }
+  else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = '{{.VideoSource}}';
+    video.addEventListener('loadedmetadata', function() {
+      video.play();
+    });
+  }
+</script>

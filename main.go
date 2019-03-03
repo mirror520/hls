@@ -3,12 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
-	"text/template"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -33,6 +33,11 @@ type RecordFile struct {
 	Time     time.Time
 	RecordID int
 	Filename string
+}
+
+// Player ...
+type Player struct {
+	VideoSource string
 }
 
 var influxClient *client.Client
@@ -72,10 +77,10 @@ func playlistHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/x-mpegURL")
-	report := template.Must(template.New("playlist").
+	tmpl := template.Must(template.New("playlist").
 		Funcs(template.FuncMap{"toDate": toDate}).
 		Parse(playlistTemplate))
-	report.Execute(w, playlist)
+	tmpl.Execute(w, playlist)
 }
 
 func playerHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,33 +89,13 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 	start := vars["start"]
 	end := vars["end"]
 
-	videoSource := fmt.Sprintf("%s?start=%s&end=%s", source, start, end)
+	player := Player{
+		VideoSource: fmt.Sprintf("%s?start=%s&end=%s",
+			source, start, end),
+	}
 
-	playerTemplate := `<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<video id="video" controls autoplay height="100%"></video>
-<script>
-  var video = document.getElementById('video');
-  var config = {
-	debug: true,
-	liveSyncDurationCount: Number.MAX_SAFE_INTEGER,
-  };
-  if(Hls.isSupported()) {
-    var hls = new Hls(config);
-    hls.loadSource('%s');
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, function() {
-	  video.play();
-	});
-  }
-  else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = '%s';
-    video.addEventListener('loadedmetadata', function() {
-      video.play();
-    });
-  }
-</script>`
-
-	fmt.Fprintf(w, playerTemplate, videoSource, videoSource)
+	tmpl := template.Must(template.ParseFiles("player.html"))
+	tmpl.Execute(w, player)
 }
 
 func getRecordFiles(stream, channel string, startTime, endTime time.Time) []RecordFile {
