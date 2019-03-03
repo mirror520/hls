@@ -17,6 +17,7 @@ WORKDIR $GOPATH
 
 RUN go get github.com/gorilla/mux \
  && go get github.com/influxdata/influxdb1-client \
+ && go get github.com/rs/cors \
  && go get github.com/mirror520/hls \
  && go install github.com/mirror520/hls
 
