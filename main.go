@@ -24,6 +24,7 @@ type Playlist struct {
 	Channel   string
 	StartTime time.Time
 	EndTime   time.Time
+	Seq       string
 	Files     []RecordFile
 }
 
@@ -39,6 +40,7 @@ var location *time.Location
 
 const playlistTemplate = `#EXTM3U
 #EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:{{.Seq}}
 #EXT-X-TARGETDURATION:60
 #EXT-X-VERSION:3
 {{range .Files}}#EXTINF:60,
@@ -65,6 +67,7 @@ func playlistHandler(w http.ResponseWriter, r *http.Request) {
 		Channel:   vars["channel"],
 		StartTime: startTime,
 		EndTime:   endTime,
+		Seq:       fmt.Sprintf("%d", files[0].Time.Unix()),
 		Files:     files,
 	}
 
@@ -84,22 +87,24 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 	videoSource := fmt.Sprintf("%s?start=%s&end=%s", source, start, end)
 
 	playerTemplate := `<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<video id="video"></video>
+<video id="video" controls autoplay height="100%"></video>
 <script>
   var video = document.getElementById('video');
+  var config = {
+	debug: true,
+	liveSyncDurationCount: Number.MAX_SAFE_INTEGER,
+  };
   if(Hls.isSupported()) {
-    var hls = new Hls();
+    var hls = new Hls(config);
     hls.loadSource('%s');
     hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED,function() {
-      video.seek(0);
-      video.play();
-  });
- }
+    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+	  video.play();
+	});
+  }
   else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = '%s';
     video.addEventListener('loadedmetadata', function() {
-      video.seek(0);
       video.play();
     });
   }
