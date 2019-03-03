@@ -61,7 +61,7 @@ func playlistHandler(w http.ResponseWriter, r *http.Request) {
 
 	start, _ := strconv.ParseInt(vars["start"], 10, 64)
 	end, _ := strconv.ParseInt(vars["end"], 10, 64)
-	startTime := time.Unix(start, 0)
+	startTime := time.Unix(start, 0).Add(-90 * time.Second)
 	endTime := time.Unix(end, 0)
 	files := getRecordFiles(vars["stream"], vars["channel"], startTime, endTime)
 
