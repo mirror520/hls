@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	client "github.com/influxdata/influxdb1-client"
+	"github.com/rs/cors"
 )
 
 // Playlist ...
@@ -58,7 +59,7 @@ func playlistHandler(w http.ResponseWriter, r *http.Request) {
 	files := getRecordFiles(vars["stream"], vars["channel"], startTime, endTime)
 
 	playlist := Playlist{
-		URL:       os.Getenv("URL"),
+		URL:       os.Getenv("RECORD_URL"),
 		Path:      "/mivs/record",
 		Stream:    vars["stream"],
 		Channel:   vars["channel"],
@@ -119,5 +120,5 @@ func main() {
 	router.HandleFunc("/vod/{stream}/{channel}/playlist.m3u8", playlistHandler).
 		Queries("start", "{start}", "end", "{end}")
 	router.PathPrefix("/mivs/record/").Handler(http.StripPrefix("/mivs/record", http.FileServer(http.Dir(os.Getenv("RECORD_DIR")))))
-	log.Fatal(http.ListenAndServe(":80", router))
+	log.Fatal(http.ListenAndServe(":80", cors.Default().Handler(router)))
 }
