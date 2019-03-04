@@ -129,6 +129,13 @@ func getRecordFiles(stream, channel string, startTime, endTime time.Time) []Reco
 	return files
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	host, _ := url.Parse(fmt.Sprintf("http://%s:%d", os.Getenv("INFLUXDB_HOST"), 8086))
 
@@ -145,5 +152,6 @@ func main() {
 	router.HandleFunc("/vod/player", playerHandler).
 		Queries("source", "{source}", "start", "{start}", "end", "{end}")
 	router.PathPrefix("/mivs/record/").Handler(http.StripPrefix("/mivs/record", http.FileServer(http.Dir(os.Getenv("RECORD_DIR")))))
+	router.Use(loggingMiddleware)
 	log.Fatal(http.ListenAndServe(":80", cors.Default().Handler(router)))
 }
